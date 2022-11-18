@@ -366,13 +366,13 @@ function main() {
 2.2, 2.0000000000000004, 1.5999999999999999,
     ]);
     // create new instance of BufferAttribute with Float3sArray and set as 'position'
-    pointGeometry.setAttribute('position', new THREE.BufferAttribute( data, 3 ));
+    pointGeometry.setAttribute('position', new THREE.BufferAttribute( data.slice(0, 60), 3));
     // can now call methods like translate, center, rotateX, ect
     pointGeometry.center();
     //-------- ----------
     // POINTS
     //-------- ----------
-    const geoPoints = new THREE.Points(pointGeometry, new THREE.PointsMaterial({size: 0.5, color:0xff0000  }));
+    const geoPoints = new THREE.Points(pointGeometry, new THREE.PointsMaterial({size: 0.3, color:0xff0000  }));
     camera.lookAt(geoPoints.position);
     scene.add(geoPoints);
   }
