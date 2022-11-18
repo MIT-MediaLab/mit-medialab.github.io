@@ -97,13 +97,13 @@
 
     var format = d3.format("+.3f");
 
-    var data = d3.csv("defaultData.csv", function (d) {
+    var data = d3.csv("sampledata.csv", function (d) {
         
         d.forEach(function (d,i) {
             unfiltered[i] = {
-                x: +d.x,
-                y: +d.y,
-                z: +d.z
+                x: + JSON.parse(d.measured_pos)[0],
+                y: + JSON.parse(d.measured_pos)[1],
+                z: + JSON.parse(d.measured_pos)[2]
             };
             lowPass[i] = {
                 x: +d.lp_x,
