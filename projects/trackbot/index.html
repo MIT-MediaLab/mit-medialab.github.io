@@ -38,6 +38,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
 import {MTLLoader} from 'three/addons/loaders/MTLLoader.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 // import {FlyControls} from 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/jsm/controls/FlyControls.js';
 
 // import { addWallLighting, addRoom } from './common';
@@ -129,7 +130,12 @@ function main() {
     // scene.add(mesh);
   }
 
-   /////grid
+  { //axis helper
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
+  }
+
+  /////grid
   {
     var grid = new THREE.GridHelper(10, 10);
     scene.add(grid);
@@ -375,8 +381,19 @@ function main() {
     const geoPoints = new THREE.Points(pointGeometry, new THREE.PointsMaterial({size: 0.3, color:0xff0000  }));
     camera.lookAt(geoPoints.position);
     scene.add(geoPoints);
+
+    //-------- ----------
+    // Add events: https://stackoverflow.com/questions/23723937/how-to-click-an-object-in-three-js
+    //-------- ----------
+    
+    
   }
 
+  ////////////// add axis helper
+  {
+    var axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
+  }
   //////mapping points
 
   // {
@@ -624,19 +641,28 @@ function main() {
     scene.add(light.target);
   }
 
-  {
-    const mtlLoader = new MTLLoader();
-    mtlLoader.load('./models/textured.mtl', (mtl) => {
-      mtl.preload();
-      const objLoader = new OBJLoader();
-      objLoader.setMaterials(mtl);
-      objLoader.load('./models/textured.obj', (root) => {
-        var boundingBox = new THREE.Box3().setFromObject( root );
-        boundingBox.getCenter( root.position ).negate();
+  // { // load obj
+  //   const mtlLoader = new MTLLoader();
+  //   mtlLoader.load('./models/textured.mtl', (mtl) => {
+  //     mtl.preload();
+  //     const objLoader = new OBJLoader();
+  //     objLoader.setMaterials(mtl);
+  //     objLoader.load('./models/textured.obj', (root) => {
+  //       var boundingBox = new THREE.Box3().setFromObject( root );
+  //       boundingBox.getCenter( root.position ).negate();
 
+  //       scene.add(root);
+  //     });
+  //   });
+  // }
+
+  { // load gltf
+      const gltfLoader = new GLTFLoader();
+      gltfLoader.load('./models/trackbot_room.gltf', (gltf) => {
+        const root = gltf.scene;
         scene.add(root);
+        console.log(dumpObject(root).join('\n'));
       });
-    });
   }
 
   function resizeRendererToDisplaySize(renderer) {
