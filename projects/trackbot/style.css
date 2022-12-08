@@ -16,3 +16,7 @@ html, body {
     padding: 8px;
     color: white;
   }
+
+Mesh:hover{
+    cursor: pointer;
+}
