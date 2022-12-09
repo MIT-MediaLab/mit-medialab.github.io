@@ -112,7 +112,7 @@ var getJSON = function(url, callback) {
   xhr.open('GET', url, true);
   xhr.responseType = 'json';
 
-  xhr.setRequestHeader("Content-Type", "text/plain;charset=UTF-8");
+  xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
   xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
 
   xhr.onload = function() {
