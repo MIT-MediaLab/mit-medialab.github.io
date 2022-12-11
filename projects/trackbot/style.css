@@ -20,3 +20,7 @@ html, body {
 Mesh:hover{
     cursor: pointer;
 }
+
+#start_btn {
+  display: none;
+}

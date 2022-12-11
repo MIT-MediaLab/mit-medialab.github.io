@@ -15,6 +15,7 @@
  <div id="camera-vectors">
     <B>Trackbot Dashboard</B>
     <br/>
+    <input id="start_btn" type="button" value="Start" onclick="start()"> <span id="start_trackbot"></span>
     <br/>
     <span id="scale"></span>
     <br/>
@@ -34,7 +35,7 @@
       <br>
     </form>
     <br/>
-    <form>
+    <form action="?items=">
       <label for="items">Choose an item:</label><br/>
       <select id="myItem" name="items" id="item">
         <option value="1">tag1</option>
@@ -58,7 +59,7 @@
         <option value="19">tag19</option>
         <option value="20">tag20</option>
       </select>
-      <input type="button" value="Search" onclick="search()">
+      <input type="submit" value="Search" onclick="search()">
     </form>
 
     <br/>  
@@ -73,6 +74,31 @@
 <script>
   //global 
   var data=[];
+
+  //main func
+
+  var main;
+
+  //http get
+  var getJSON = function(url, callback) {
+    var xhr = new XMLHttpRequest();
+    
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+    xhr.responseType = 'json';
+
+    xhr.onload = function() {
+      var status = xhr.status;
+      if (status === 200) {
+        callback(null, xhr.response);
+      } else {
+        callback(status, xhr.response);
+      }
+    };
+    xhr.send();
+  };
+
 </script>
 
 <script type="importmap">
@@ -117,27 +143,8 @@ var geoPoints;
 
 
 
-var getJSON = function(url, callback) {
-  var xhr = new XMLHttpRequest();
-  
-  xhr.open('GET', url, true);
-  xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-  xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
-  xhr.responseType = 'json';
 
-  xhr.onload = function() {
-    var status = xhr.status;
-    if (status === 200) {
-      callback(null, xhr.response);
-    } else {
-      callback(status, xhr.response);
-    }
-  };
-  xhr.send();
-};
-
-
-function main(input_data) {
+main = function(input_data) {
   const canvas = document.querySelector('#c');
   const renderer = new THREE.WebGLRenderer({canvas});
   renderer.outputEncoding = THREE.sRGBEncoding;
@@ -545,6 +552,8 @@ var urlString = window.location.href;
 let paramString = urlString.split('?')[1];
 let queryString = new URLSearchParams(paramString);
 
+
+//Entrance control:
 for (let pair of queryString.entries()) {
    console.log("Key is: " + pair[0]);
    console.log("Value is: " + pair[1]);
@@ -552,23 +561,104 @@ for (let pair of queryString.entries()) {
     document.getElementById("scale").innerHTML  = "Scale: " + pair[1]
    }else if(pair[0]=="offset"){
     document.getElementById("offset").innerHTML  = "Offset: " + pair[1]
-   }
+   }else if (pair[0]=="start" && pair[1]=="1" ){
+    document.getElementById("start_btn").style.display = "block";
+   }else if (pair[0]=="items"){
+    //search final
 
+
+    getJSON('https://ujce9xyn45.execute-api.ap-southeast-1.amazonaws.com/default/trackbot_api?service=trackbot&operation=get_latest_location',
+    function(err, d) {
+      if (err !== null) {
+        console.log('Something went wrong: ' + err);
+      } else {
+        console.log('Your data: ' + JSON.stringify(d));
+      }
+      var input_data=d;
+      var search_data = [      
+      input_data.message.tag1,
+      input_data.message.tag2,
+      input_data.message.tag3,
+      input_data.message.tag4,
+      input_data.message.tag5,
+      input_data.message.tag6,
+      input_data.message.tag7,
+      input_data.message.tag8,
+      input_data.message.tag9,
+      input_data.message.tag10,
+      input_data.message.tag11,
+      input_data.message.tag12,
+      input_data.message.tag13,
+      input_data.message.tag14,
+      input_data.message.tag15,
+      input_data.message.tag16,
+      input_data.message.tag17,
+      input_data.message.tag18,
+      input_data.message.tag19,
+      input_data.message.tag20];
+
+      for (var i=1;i< search_data.length+1; i++){
+        if(i!=parseInt(pair[1])){
+          search_data[i-1] = {}
+          // console.log('Find, ' + i-1 + '|'+ search_data[i-1])
+        }
+      }
+      var json_data= {"indicator": true, "message": {
+        "tag1": search_data[0], 
+        "tag2": search_data[1],
+        "tag3": search_data[2],
+        "tag4": search_data[3],
+        "tag5": search_data[4],
+        "tag6": search_data[5],
+        "tag7": search_data[6],
+        "tag8": search_data[7],
+        "tag9": search_data[8],
+        "tag10": search_data[9],
+        "tag11": search_data[10],
+        "tag12": search_data[11],
+        "tag13": search_data[12],
+        "tag14": search_data[13],
+        "tag15": search_data[14],
+        "tag16": search_data[15],
+        "tag17": search_data[16],
+        "tag18": search_data[17],
+        "tag19": search_data[18],
+        "tag20": search_data[19]
+      }
+    };
+     console.log('search_result', json_data )
+     main(json_data);
+    });
+   }else{
+    //// Default
+    getJSON('https://ujce9xyn45.execute-api.ap-southeast-1.amazonaws.com/default/trackbot_api?service=trackbot&operation=get_latest_location',
+    function(err, d) {
+      if (err !== null) {
+        console.log('Something went wrong: ' + err);
+      } else {
+        console.log('Your data: ' + JSON.stringify(d));
+      }
+      var json_data= {"indicator": true, "message": {"tag1": {}, "tag2": {}, "tag3": {"description": "tag3 object", "price": 98, "measured_pos": [-0.39999999999999997, 2.4000000000000004, 2.1999999999999997], "expected_pos": [-0.15, 2.1, 1.35], "confidence": 3.67, "pos_error": 0.9354143466934851}, "tag4": {"description": "tag4 object", "price": 30, "measured_pos": [0.20000000000000007, 1.6, 0.8], "expected_pos": [-0.15, 1.95, 1.35], "confidence": 1.67, "pos_error": 0.7399324293474371}, "tag5": {"description": "tag5 object", "price": 75, "measured_pos": [1.2000000000000002, 1.6, 1.2], "expected_pos": [1.33, 1.54, 1.2], "confidence": 10.06, "pos_error": 0.14317821063276345}, "tag6": {}, "tag7": {}, "tag8": {"description": "tag8 object", "price": 21, "measured_pos": [1.6, 1.6, 1.5999999999999999], "expected_pos": [1.57, 1.54, 1.47], "confidence": 11.67, "pos_error": 0.14628738838327787}, "tag9": {"description": "tag9 object", "price": 83, "measured_pos": [1.4, 1.6, 2.1999999999999997], "expected_pos": [1.62, 1.54, 1.87], "confidence": 9.11, "pos_error": 0.4011234224026314}, "tag10": {}, "tag11": {}, "tag12": {"description": "tag12 object", "price": 3, "measured_pos": [2.6, 0.6, 1.4], "expected_pos": [2.1, 0.26, 1.22], "confidence": 5.67, "pos_error": 0.6308724118235002}, "tag13": {"description": "tag13 object", "price": 13, "measured_pos": [2.0, 0.20000000000000007, 2.1999999999999997], "expected_pos": [2.35, 0.26, 1.22], "confidence": 3.11, "pos_error": 1.0423531071570706}, "tag14": {"description": "tag14 object", "price": 32, "measured_pos": [0.20000000000000007, 0.4, 1.5999999999999999], "expected_pos": [2.55, 0.26, 1.22], "confidence": 2.0, "pos_error": 2.3846383373585183}, "tag15": {"description": "tag15 object", "price": 67, "measured_pos": [1.8000000000000003, -0.4, 2.1999999999999997], "expected_pos": [2.1, 2.5, 1.26], "confidence": 2.0, "pos_error": 3.063266230676008}, "tag16": {"description": "tag16 object", "price": 12, "measured_pos": [2.2, 2.4000000000000004, 1.2], "expected_pos": [2.25, 2.5, 1.26], "confidence": 4.0, "pos_error": 0.1268857754044949}, "tag17": {"description": "tag17 object", "price": 53, "measured_pos": [2.4, 2.6, 1.5999999999999999], "expected_pos": [2.4, 2.5, 1.26], "confidence": 3.67, "pos_error": 0.3544009029333869}, "tag18": {"description": "tag18 object", "price": 38, "measured_pos": [3.6, 0.20000000000000007, 1.5999999999999999], "expected_pos": [3.65, 0.2, 1.05], "confidence": 3.11, "pos_error": 0.5522680508593629}, "tag19": {"description": "tag19 object", "price": 53, "measured_pos": [3.6, 0.4, 2.1999999999999997], "expected_pos": [3.65, 0.39, 1.84], "confidence": 6.0, "pos_error": 0.3635931792539565}, "tag20": {"description": "tag20 object", "price": 51, "measured_pos": [3.6, 1.4, 1.4], "expected_pos": [3.65, 1.3, 1.38], "confidence": 7.11, "pos_error": 0.11357816691600528}}} 
+      var input_data =  d  || json_data
+      main(input_data);
+    });
+
+   }
 }
 
 
 
-getJSON('https://ujce9xyn45.execute-api.ap-southeast-1.amazonaws.com/default/trackbot_api?service=trackbot&operation=get_latest_location',
-function(err, data) {
-  if (err !== null) {
-    console.log('Something went wrong: ' + err);
-  } else {
-    console.log('Your data: ' + JSON.stringify(data));
-  }
-  var json_data= {"indicator": true, "message": {"tag1": {}, "tag2": {}, "tag3": {"description": "tag3 object", "price": 98, "measured_pos": [-0.39999999999999997, 2.4000000000000004, 2.1999999999999997], "expected_pos": [-0.15, 2.1, 1.35], "confidence": 3.67, "pos_error": 0.9354143466934851}, "tag4": {"description": "tag4 object", "price": 30, "measured_pos": [0.20000000000000007, 1.6, 0.8], "expected_pos": [-0.15, 1.95, 1.35], "confidence": 1.67, "pos_error": 0.7399324293474371}, "tag5": {"description": "tag5 object", "price": 75, "measured_pos": [1.2000000000000002, 1.6, 1.2], "expected_pos": [1.33, 1.54, 1.2], "confidence": 10.06, "pos_error": 0.14317821063276345}, "tag6": {}, "tag7": {}, "tag8": {"description": "tag8 object", "price": 21, "measured_pos": [1.6, 1.6, 1.5999999999999999], "expected_pos": [1.57, 1.54, 1.47], "confidence": 11.67, "pos_error": 0.14628738838327787}, "tag9": {"description": "tag9 object", "price": 83, "measured_pos": [1.4, 1.6, 2.1999999999999997], "expected_pos": [1.62, 1.54, 1.87], "confidence": 9.11, "pos_error": 0.4011234224026314}, "tag10": {}, "tag11": {}, "tag12": {"description": "tag12 object", "price": 3, "measured_pos": [2.6, 0.6, 1.4], "expected_pos": [2.1, 0.26, 1.22], "confidence": 5.67, "pos_error": 0.6308724118235002}, "tag13": {"description": "tag13 object", "price": 13, "measured_pos": [2.0, 0.20000000000000007, 2.1999999999999997], "expected_pos": [2.35, 0.26, 1.22], "confidence": 3.11, "pos_error": 1.0423531071570706}, "tag14": {"description": "tag14 object", "price": 32, "measured_pos": [0.20000000000000007, 0.4, 1.5999999999999999], "expected_pos": [2.55, 0.26, 1.22], "confidence": 2.0, "pos_error": 2.3846383373585183}, "tag15": {"description": "tag15 object", "price": 67, "measured_pos": [1.8000000000000003, -0.4, 2.1999999999999997], "expected_pos": [2.1, 2.5, 1.26], "confidence": 2.0, "pos_error": 3.063266230676008}, "tag16": {"description": "tag16 object", "price": 12, "measured_pos": [2.2, 2.4000000000000004, 1.2], "expected_pos": [2.25, 2.5, 1.26], "confidence": 4.0, "pos_error": 0.1268857754044949}, "tag17": {"description": "tag17 object", "price": 53, "measured_pos": [2.4, 2.6, 1.5999999999999999], "expected_pos": [2.4, 2.5, 1.26], "confidence": 3.67, "pos_error": 0.3544009029333869}, "tag18": {"description": "tag18 object", "price": 38, "measured_pos": [3.6, 0.20000000000000007, 1.5999999999999999], "expected_pos": [3.65, 0.2, 1.05], "confidence": 3.11, "pos_error": 0.5522680508593629}, "tag19": {"description": "tag19 object", "price": 53, "measured_pos": [3.6, 0.4, 2.1999999999999997], "expected_pos": [3.65, 0.39, 1.84], "confidence": 6.0, "pos_error": 0.3635931792539565}, "tag20": {"description": "tag20 object", "price": 51, "measured_pos": [3.6, 1.4, 1.4], "expected_pos": [3.65, 1.3, 1.38], "confidence": 7.11, "pos_error": 0.11357816691600528}}} 
-  var d =  data  || json_data
-  main(data);
-});
+// getJSON('https://ujce9xyn45.execute-api.ap-southeast-1.amazonaws.com/default/trackbot_api?service=trackbot&operation=get_latest_location',
+// function(err, d) {
+//   if (err !== null) {
+//     console.log('Something went wrong: ' + err);
+//   } else {
+//     console.log('Your data: ' + JSON.stringify(d));
+//   }
+//   var json_data= {"indicator": true, "message": {"tag1": {}, "tag2": {}, "tag3": {"description": "tag3 object", "price": 98, "measured_pos": [-0.39999999999999997, 2.4000000000000004, 2.1999999999999997], "expected_pos": [-0.15, 2.1, 1.35], "confidence": 3.67, "pos_error": 0.9354143466934851}, "tag4": {"description": "tag4 object", "price": 30, "measured_pos": [0.20000000000000007, 1.6, 0.8], "expected_pos": [-0.15, 1.95, 1.35], "confidence": 1.67, "pos_error": 0.7399324293474371}, "tag5": {"description": "tag5 object", "price": 75, "measured_pos": [1.2000000000000002, 1.6, 1.2], "expected_pos": [1.33, 1.54, 1.2], "confidence": 10.06, "pos_error": 0.14317821063276345}, "tag6": {}, "tag7": {}, "tag8": {"description": "tag8 object", "price": 21, "measured_pos": [1.6, 1.6, 1.5999999999999999], "expected_pos": [1.57, 1.54, 1.47], "confidence": 11.67, "pos_error": 0.14628738838327787}, "tag9": {"description": "tag9 object", "price": 83, "measured_pos": [1.4, 1.6, 2.1999999999999997], "expected_pos": [1.62, 1.54, 1.87], "confidence": 9.11, "pos_error": 0.4011234224026314}, "tag10": {}, "tag11": {}, "tag12": {"description": "tag12 object", "price": 3, "measured_pos": [2.6, 0.6, 1.4], "expected_pos": [2.1, 0.26, 1.22], "confidence": 5.67, "pos_error": 0.6308724118235002}, "tag13": {"description": "tag13 object", "price": 13, "measured_pos": [2.0, 0.20000000000000007, 2.1999999999999997], "expected_pos": [2.35, 0.26, 1.22], "confidence": 3.11, "pos_error": 1.0423531071570706}, "tag14": {"description": "tag14 object", "price": 32, "measured_pos": [0.20000000000000007, 0.4, 1.5999999999999999], "expected_pos": [2.55, 0.26, 1.22], "confidence": 2.0, "pos_error": 2.3846383373585183}, "tag15": {"description": "tag15 object", "price": 67, "measured_pos": [1.8000000000000003, -0.4, 2.1999999999999997], "expected_pos": [2.1, 2.5, 1.26], "confidence": 2.0, "pos_error": 3.063266230676008}, "tag16": {"description": "tag16 object", "price": 12, "measured_pos": [2.2, 2.4000000000000004, 1.2], "expected_pos": [2.25, 2.5, 1.26], "confidence": 4.0, "pos_error": 0.1268857754044949}, "tag17": {"description": "tag17 object", "price": 53, "measured_pos": [2.4, 2.6, 1.5999999999999999], "expected_pos": [2.4, 2.5, 1.26], "confidence": 3.67, "pos_error": 0.3544009029333869}, "tag18": {"description": "tag18 object", "price": 38, "measured_pos": [3.6, 0.20000000000000007, 1.5999999999999999], "expected_pos": [3.65, 0.2, 1.05], "confidence": 3.11, "pos_error": 0.5522680508593629}, "tag19": {"description": "tag19 object", "price": 53, "measured_pos": [3.6, 0.4, 2.1999999999999997], "expected_pos": [3.65, 0.39, 1.84], "confidence": 6.0, "pos_error": 0.3635931792539565}, "tag20": {"description": "tag20 object", "price": 51, "measured_pos": [3.6, 1.4, 1.4], "expected_pos": [3.65, 1.3, 1.38], "confidence": 7.11, "pos_error": 0.11357816691600528}}} 
+//   var input_data =  d  || json_data
+//   main(input_data);
+// });
 
 
 // test
@@ -582,14 +672,34 @@ function(err, data) {
 </script>
 
 <script>
-  var search = function(){
+  var search = function(){ //Retired
     var e = document.getElementById("myItem");
     var value = e.value;
     var text = e.options[e.selectedIndex].text;
     console.log('select value: ', value)
     console.log('select text: ', text)
+
     document.getElementById("point").innerHTML = "Name: "+ text + " | Measured Position:" + JSON.stringify(data[value].measured_pos) + " | Expected Position:" + JSON.stringify(data[value].expected_pos);
+   
     //Note: so far search will be raw location, as the mapped location might be variances based on users calibaration, so we would like to keep a raw to compare from the source.
+  }
+</script>
+
+<script>
+  var start = function(){
+    document.getElementById("start_trackbot").innerHTML = "Starting trackbot...";
+    
+    getJSON('https://ujce9xyn45.execute-api.ap-southeast-1.amazonaws.com/default/trackbot_api?service=trackbot&operation=start_reading&exp_id=finaldemo',
+    function(err, d) {
+      if (err !== null) {
+        console.log('Something went wrong: ' + err);
+      } else {
+        console.log('Your data: ' + JSON.stringify(d));
+      }
+      var input_data= {"indicator": true, "message": {"tag1": {},"tag2": {},"tag3": {},"tag4": {},"tag5": {},"tag6": {},"tag7": {},"tag8": {},"tag9": {},"tag10": {},
+      "tag11": {},"tag12": {},"tag13": {},"tag14": {},"tag15": {},"tag16": {},"tag17": {},"tag18": {},"tag19": {},"tag20": {}}} 
+      main(input_data);
+    });
   }
 </script>
 
