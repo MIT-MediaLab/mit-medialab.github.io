@@ -16,32 +16,10 @@
     <B>Trackbot Dashboard</B>
     <br/>
     <br/>
-    <form action="#">
-      <label for="items">Choose an item:</label><br/>
-      <select name="items" id="item">
-        <option value="Shirt 1">Shirt 1</option>
-        <option value="Shirt 2">Shirt 2</option>
-        <option value="Shirt 3">Shirt 3</option>
-        <option value="Shirt 4">Shirt 4</option>
-        <option value="Shirt 5">Shirt 5</option>
-        <option value="Shirt 6">Shirt 6</option>
-        <option value="Shirt 7">Shirt 7</option>
-        <option value="Shirt 8">Shirt 8</option>
-        <option value="Shirt 9">Shirt 9</option>
-        <option value="Shirt 10">Shirt 10</option>
-        <option value="Shirt 11">Shirt 11</option>
-        <option value="Shirt 12">Shirt 12</option>
-        <option value="Shirt 13">Shirt 13</option>
-        <option value="Shirt 14">Shirt 14</option>
-        <option value="Shoe 1">Shoe 1</option>
-        <option value="Shoe 2">Shoe 2</option>
-        <option value="Shoe 3">Shoe 3</option>
-        <option value="Shoe 4">Shoe 4</option>
-        <option value="Shoe 5">Shoe 5</option>
-        <option value="Shoe 6">Shoe 6</option>
-      </select>
-      <input type="submit" value="Search">
-    </form>
+    <span id="scale"></span>
+    <br/>
+    <span id="offset"></span>
+    <br/>
     <br/>
     <form>
       <p>Angle of view:</p>
@@ -55,6 +33,34 @@
       <label for="choiceRight">Right</label>
       <br>
     </form>
+    <br/>
+    <form>
+      <label for="items">Choose an item:</label><br/>
+      <select id="myItem" name="items" id="item">
+        <option value="1">tag1</option>
+        <option value="2">tag2</option>
+        <option value="3">tag3</option>
+        <option value="4">tag4</option>
+        <option value="5">tag5</option>
+        <option value="6">tag6</option>
+        <option value="7">tag7</option>
+        <option value="8">tag8</option>
+        <option value="9">tag9</option>
+        <option value="10">tag10</option>
+        <option value="11">tag11</option>
+        <option value="12">tag12</option>
+        <option value="13">tag13</option>
+        <option value="14">tag14</option>
+        <option value="15">tag15</option>
+        <option value="16">tag16</option>
+        <option value="17">tag17</option>
+        <option value="18">tag18</option>
+        <option value="19">tag19</option>
+        <option value="20">tag20</option>
+      </select>
+      <input type="button" value="Search" onclick="search()">
+    </form>
+
     <br/>  
     <span id="point"></span>
     <br/>
@@ -64,7 +70,10 @@
 <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/98/three.min.js'></script>
 <!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.module.min.js'></script> -->
 <!-- <script src="./js/three.min.js" charset="utf-8"></script>  -->
-
+<script>
+  //global 
+  var data=[];
+</script>
 
 <script type="importmap">
     {
@@ -104,6 +113,7 @@ var geoPoints;
   pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
   }
+
 
 
 
@@ -168,9 +178,6 @@ function main(input_data) {
     //camera.position.set(position.x, position.y, position.z);
   }
 
-  function Search(position){
-    //camera.position.set(position.x, position.y, position.z);
-  }
 
 
   // const camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
@@ -286,7 +293,7 @@ var testData = [
       input_data.message.tag20
     ]
 
-    var data = json_data;
+    data = json_data;
     // create new instance of BufferAttribute with Float3sArray and set as 'position'
     // pointGeometry.setAttribute('position', new THREE.BufferAttribute( data.slice(0, 60), 3));
     // can now call methods like translate, center, rotateX, ect
@@ -325,6 +332,15 @@ var testData = [
     }
 
 
+
+    var search = function(){
+    var e = document.getElementById("myItem");
+    var value = e.value;
+    var text = e.options[e.selectedIndex].text;
+    console.log('select value: ', value)
+    console.log('select text: ', text)
+    document.getElementById("point").innerHTML = "Name: "+ text + " | Measured Position: " + JSON.stringify(data[value].measured_pos) + " | Expected Position: " + JSON.stringify(data[value].expected_pos);
+  }
 
 
     //-------- ----------
@@ -525,6 +541,23 @@ var testData = [
 }
 
 
+var urlString = window.location.href;
+let paramString = urlString.split('?')[1];
+let queryString = new URLSearchParams(paramString);
+
+for (let pair of queryString.entries()) {
+   console.log("Key is: " + pair[0]);
+   console.log("Value is: " + pair[1]);
+   if(pair[0]=="scale"){
+    document.getElementById("scale").innerHTML  = "Scale: " + pair[1]
+   }else if(pair[0]=="offset"){
+    document.getElementById("offset").innerHTML  = "Offset: " + pair[1]
+   }
+
+}
+
+
+
 getJSON('https://ujce9xyn45.execute-api.ap-southeast-1.amazonaws.com/default/trackbot_api?service=trackbot&operation=get_latest_location',
 function(err, data) {
   if (err !== null) {
@@ -548,6 +581,17 @@ function(err, data) {
 
 </script>
 
+<script>
+  var search = function(){
+    var e = document.getElementById("myItem");
+    var value = e.value;
+    var text = e.options[e.selectedIndex].text;
+    console.log('select value: ', value)
+    console.log('select text: ', text)
+    document.getElementById("point").innerHTML = "Name: "+ text + " | Measured Position:" + JSON.stringify(data[value].measured_pos) + " | Expected Position:" + JSON.stringify(data[value].expected_pos);
+    //Note: so far search will be raw location, as the mapped location might be variances based on users calibaration, so we would like to keep a raw to compare from the source.
+  }
+</script>
 
 
 </body>

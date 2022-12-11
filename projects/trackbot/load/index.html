@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+    <title>Trackbot | A 3D Tracking Visualization</title>
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width">
+    <!-- <script src="https://raw.github.com/sole/tween.js/master/build/tween.min.js"></script> -->
+    <!-- <script src="./js/three.min.js" charset="utf-8"></script> -->
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+ <!-- 1. create spans for displaying camera position and lookAt vectors -->
+ <!-- <div id="camera-vectors">
+    <B>Trackbot Dashboard</B>
+    <br/>
+    <br/>
+    <form action="#">
+      <label for="items">Choose an item:</label><br/>
+      <select name="items" id="item">
+        <option value="Shirt 1">Shirt 1</option>
+        <option value="Shirt 2">Shirt 2</option>
+        <option value="Shirt 3">Shirt 3</option>
+        <option value="Shirt 4">Shirt 4</option>
+        <option value="Shirt 5">Shirt 5</option>
+        <option value="Shirt 6">Shirt 6</option>
+        <option value="Shirt 7">Shirt 7</option>
+        <option value="Shirt 8">Shirt 8</option>
+        <option value="Shirt 9">Shirt 9</option>
+        <option value="Shirt 10">Shirt 10</option>
+        <option value="Shirt 11">Shirt 11</option>
+        <option value="Shirt 12">Shirt 12</option>
+        <option value="Shirt 13">Shirt 13</option>
+        <option value="Shirt 14">Shirt 14</option>
+        <option value="Shoe 1">Shoe 1</option>
+        <option value="Shoe 2">Shoe 2</option>
+        <option value="Shoe 3">Shoe 3</option>
+        <option value="Shoe 4">Shoe 4</option>
+        <option value="Shoe 5">Shoe 5</option>
+        <option value="Shoe 6">Shoe 6</option>
+      </select>
+      <input type="submit" value="Search">
+    </form>
+    <br/>
+    <form>
+      <p>Angle of view:</p>
+      <input type="radio" name="view" id="choiceTop" value="top">
+      <label for="choiceTop">Top</label>
+      <input type="radio" name="view" id="choiceFront" value="front">
+      <label for="choiceFront">Front</label>
+      <input type="radio" name="view" id="choiceLeft" value="left">
+      <label for="choiceLeft">Left</label>  
+      <input type="radio" name="view" id="choiceRight" value="right">
+      <label for="choiceRight">Right</label>
+      <br>
+    </form>
+    <br/>  
+    <span id="point"></span>
+    <br/>
+    <span id="lookingAt"></span>
+  </div> -->
+
+<button onclick="myFunction()">Upload</button>
+<a href="https://www.usdz-viewer.net/">Demo</a>
+<script>
+function myFunction() {
+  var x = document.createElement("INPUT");
+  x.setAttribute("type", "file");
+  document.body.appendChild(x);
+}
+</script>
+
+<iframe src="https://www.usdz-viewer.net/" height="100%" width="100%"></iframe>
+
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/98/three.min.js'></script>
+<!-- <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.module.min.js'></script> -->
+<!-- <script src="./js/three.min.js" charset="utf-8"></script>  -->
+
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://threejs.org/build/three.module.js",
+            "three/addons/": "https://threejs.org/examples/jsm/"
+        }
+    }
+</script>
+
+<script type="module">
+
+// JS code
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {OBJLoader} from 'three/addons/loaders/OBJLoader.js';
+import {MTLLoader} from 'three/addons/loaders/MTLLoader.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+
+import { USDZLoader } from "../../../node_modules/three-usdz-loader";
+
+
+
+        // Setup the USDZ loader
+        // You may place external dependencies (.wasm / worker files) in a subfolder of the public folder. 
+        // In this case, pass the path of this folder as an arg to the USDZLoader constructor
+        const loader = new USDZLoader("../models/room.usdz");
+        
+        // Create a ThreeJs Group in which the loaded USDZ model will be placed
+        const group = new THREE.Group();
+        
+        // Add the group to the scene
+        this.scene.add(group);
+        
+        // Load your file. File is of type File
+        const loadedModel = await loader.loadFile(file, group);
+        
+        
+        // Later on, if you need to cleanup the model from the scene, simply use
+        loadedModel.clean()
+
+// import {FlyControls} from 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/jsm/controls/FlyControls.js';
+
+// import { addWallLighting, addRoom } from './common';
+let camera, scene, canvas, controls, renderer, raycaster
+// 3. define cameraDirection and span variables
+let cameraDirection = new THREE.Vector3()
+let camPositionSpan, camLookAtSpan
+let INTERSECTED;
+let theta = 0;
+
+const pointer = new THREE.Vector2();
+const radius = 100;
+
+var geoPoints;
+
+  function onPointerMove( event ) {
+
+  pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+  pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+  }
+
+
+
+var getJSON = function(url, callback) {
+  var xhr = new XMLHttpRequest();
+  
+  xhr.open('GET', url, true);
+  xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+  xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+  xhr.responseType = 'json';
+
+  xhr.onload = function() {
+    var status = xhr.status;
+    if (status === 200) {
+      callback(null, xhr.response);
+    } else {
+      callback(status, xhr.response);
+    }
+  };
+  xhr.send();
+};
+
+
+function main(input_data) {
+  const canvas = document.querySelector('#c');
+  const renderer = new THREE.WebGLRenderer({canvas});
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  const fov = 45;
+  const aspect = 2;  // the canvas default
+  const near = 0.1;
+  const far = 100;
+
+  //const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+
+  const camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 100 );
+ 
+  camera.position.set( 0, 10, 20 );
+
+  //change view:
+  // selecting radio button
+  const buttons = document.querySelectorAll("input[type='radio']");
+  // adding event to all radio buttons
+  buttons.forEach(button => {
+    button.onclick = () => {
+      if (button.checked) {
+        console.log(button.value + " selected as contact option!");
+        if(button.value=="front"){
+          camera.position.set( 0, 0, 20 );
+        }else if(button.value=="top"){          
+          camera.position.set( 0, 20, 0 );
+        }else if(button.value=="left"){
+          camera.position.set( -20, 0, 0 );
+        }else if(button.value=="right"){
+          camera.position.set( 20, 0, 0 );
+        }
+      }
+    }
+  })
+
+  function Go(position){
+    //camera.position.set(position.x, position.y, position.z);
+  }
+
+  function Search(position){
+    //camera.position.set(position.x, position.y, position.z);
+  }
+
+
+  // const camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
+  // // scene.add( camera );
+  
+  const controls = new OrbitControls(camera, canvas);
+  controls.target.set(0, 5, 0);
+  controls.update();
+
+  const scene = new THREE.Scene();
+  //scene.background = new THREE.Color('black');
+
+  // raycaster = new THREE.Raycaster();
+  // document.addEventListener( 'mousemove', onPointerMove );
+
+  {
+    const planeSize = 40;
+
+    const loader = new THREE.TextureLoader();
+    const texture = loader.load('./models/textured_0_Up6yJWLK.jpg');
+    texture.encoding = THREE.sRGBEncoding;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.magFilter = THREE.NearestFilter;
+    const repeats = planeSize / 2;
+    texture.repeat.set(repeats, repeats);
+
+    const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
+    const planeMat = new THREE.MeshPhongMaterial({
+      map: texture,
+      side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(planeGeo, planeMat);
+    mesh.rotation.x = Math.PI * -.5;
+    // scene.add(mesh);
+  }
+
+  { //axis helper
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
+  }
+
+  /////grid
+  {
+    var grid = new THREE.GridHelper(10, 10);
+    scene.add(grid);
+  var gridXZ = new THREE.GridHelper(10, 10);
+	//gridXZ.setColors( new THREE.Color(0x006600), new THREE.Color(0x006600) );
+	gridXZ.position.set(0,0,0 );
+	scene.add(gridXZ);
+	
+	var gridXY = new THREE.GridHelper(10, 10);
+	gridXY.position.set( 0,0,0 );
+	gridXY.rotation.x = Math.PI/2;
+	// gridXY.setColors( new THREE.Color(0x000066), new THREE.Color(0x000066) );
+	scene.add(gridXY);
+
+	var gridYZ = new THREE.GridHelper(10, 10);
+	gridYZ.position.set( 0,0,0 );
+	gridYZ.rotation.z = Math.PI/2;
+	// gridYZ.setColors( new THREE.Color(0x660000), new THREE.Color(0x660000) );
+
+  scene.add(gridYZ);
+  }
+
+  ///// adding points from reading data
+
+  {
+
+
+
+var testData = [
+  {'x':1, 'y':1,'z':1, 'name':'Shirt 1'},
+  {'x':1, 'y':1,'z':-1, 'name':'Shirt 2'},
+  {'x':-1, 'y':1,'z':-1, 'name':'Shoe 1'},
+  {'x':-1, 'y':1,'z':1, 'name':'Shoe 2'}
+];
+    //update logic mapping:
+    // mapped=[]
+    // const mapped_data = data.filter( item => {
+    //   if(temp.length==0)
+    //   if(item%3==0){
+    //     mapped.push(item)
+    //   }else if (item%2==0){
+    //     mapped.push(item)
+    //   }else {
+    //     mapped.push(item)
+    //   }      
+    // });
+
+    // data = mapped
+
+    var json_data = [
+      input_data.message.tag1,
+      input_data.message.tag2,
+      input_data.message.tag3,
+      input_data.message.tag4,
+      input_data.message.tag5,
+      input_data.message.tag6,
+      input_data.message.tag7,
+      input_data.message.tag8,
+      input_data.message.tag9,
+      input_data.message.tag10,
+      input_data.message.tag11,
+      input_data.message.tag12,
+      input_data.message.tag13,
+      input_data.message.tag14,
+      input_data.message.tag15,
+      input_data.message.tag16,
+      input_data.message.tag17,
+      input_data.message.tag18,
+      input_data.message.tag19,
+      input_data.message.tag20
+    ]
+
+    var data = json_data;
+    // create new instance of BufferAttribute with Float3sArray and set as 'position'
+    // pointGeometry.setAttribute('position', new THREE.BufferAttribute( data.slice(0, 60), 3));
+    // can now call methods like translate, center, rotateX, ect
+    // pointGeometry.center();
+    //-------- ----------
+    // POINTS
+    //-------- ----------
+    // geoPoints = new THREE.Points(pointGeometry, new THREE.PointsMaterial({size: 0.3, color:0x0000ff  }));
+    // camera.lookAt(geoPoints.position);
+    // scene.add(geoPoints);
+    var points = [];
+
+    for (var i=0;i< data.length; i++){
+      if(data[i].measured_pos){
+        var pointGeometry = new THREE.SphereGeometry( 0.05,32, 32 ), // adjust the first value for the 'point' radius
+        pointMaterial = new THREE.MeshBasicMaterial( {color: 0x0000ff} ),  // adjust the color of your 'point' defualt blue
+        point3D = new THREE.Mesh( pointGeometry, pointMaterial );
+        point3D.position.set( data[i]['measured_pos'][0]-1.8, 1-data[i]['measured_pos'][2], -1.2-data[i]['measured_pos'][1]);
+        point3D.name = data[i].description + ' | Price: $'+data[i].price+' | Measured';
+        scene.add(point3D);
+        points.push(point3D);
+      }
+    }
+
+    for (var i=0;i< data.length; i++){
+      if(data[i].expected_pos){
+        var pointGeometry = new THREE.SphereGeometry( 0.05,32, 32 ), // adjust the first value for the 'point' radius
+        pointMaterial = new THREE.MeshBasicMaterial( {color: 0x008000} ),  // adjust the color of your 'point' defualt blue
+        point3D = new THREE.Mesh( pointGeometry, pointMaterial );
+        point3D.position.set(data[i]['expected_pos'][0]-1.8, 1-data[i]['expected_pos'][2], -1.2-data[i]['expected_pos'][1]);
+        point3D.name = data[i].description + ' | Price: $'+data[i].price+' | Expected';
+        scene.add(point3D);
+        points.push(point3D);
+      }
+
+    }
+
+
+
+
+    //-------- ----------
+    // Add events: https://stackoverflow.com/questions/23723937/how-to-click-an-object-in-three-js
+    //-------- ----------
+    // renderer.domElement.addEventListener("click", onclick, true);
+    // var selectedObject;
+    // var raycaster = new THREE.Raycaster();
+
+    // function onclick(event) {
+
+    //   var mouse = new THREE.Vector2();
+    //   mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    //   mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    //   raycaster.setFromCamera(mouse, camera);
+    //   var intersects = raycaster.intersectObjects(geoPoints, true); //array
+    //   if (intersects.length > 0) {
+    //     selectedObject = intersects[0];
+    //     alert("onclick", selectedObject);
+    //   }
+    // }
+  }
+
+
+  ////////////// add axis helper
+  // {
+  //   var axesHelper = new THREE.AxesHelper( 5 );
+  //   scene.add( axesHelper );
+  // }
+  ////////////// Light system
+  {
+    const skyColor = 0xB1E1FF;  // light blue
+    const groundColor = 0xB97A20;  // brownish orange
+    const intensity = 1;
+    const light = new THREE.HemisphereLight(skyColor, groundColor, intensity);
+    scene.add(light);
+  }
+
+  {
+    const color = 0xFFFFFF;
+    const intensity = 1;
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(5, 10, 2);
+    scene.add(light);
+    scene.add(light.target);
+  }
+
+  // { // load obj
+  //   const mtlLoader = new MTLLoader();
+  //   mtlLoader.load('./models/textured.mtl', (mtl) => {
+  //     mtl.preload();
+  //     const objLoader = new OBJLoader();
+  //     objLoader.setMaterials(mtl);
+  //     objLoader.load('./models/textured.obj', (root) => {
+  //       var boundingBox = new THREE.Box3().setFromObject( root );
+  //       boundingBox.getCenter( root.position ).negate();
+
+  //       scene.add(root);
+  //     });
+  //   });
+  // }
+
+  { // load gltf
+      const gltfLoader = new GLTFLoader();
+      gltfLoader.load('./models/trackbot_new.gltf', (gltf) => {
+        const root = gltf.scene;
+        scene.add(root);
+        //console.log(dumpObject(root).join('\n'));
+      });
+  }
+
+
+  var mouse = new THREE.Vector2(0,0);
+  var raygun = new THREE.Raycaster();
+  var useRaycast = true;
+
+  // Raycast when we click the mouse
+  function onClick() {
+      // Get mouse position in screen space
+      mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+      mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+      // Only raycast if not panning (optimization)
+      var hits;
+      if (useRaycast) {
+          raygun.setFromCamera(mouse, camera);
+
+          // Raycast to single object
+          //hits = raygun.intersectObject(myTargetObect, false);
+
+          // Raycast to multiple objects
+          hits = raygun.intersectObjects(points);
+      }
+
+      // Run if we have intersections
+      if (hits.length > 0) {
+          // clean other points
+          for (var i = 0; i < points.length; i++ ) {
+              // Change material color of item we clicked on
+              //hits[i].object.material.color.set(0xff0000);
+              // console.log(points[i].name.split(' | '))
+              if(points[i].name.split(' | ')[2] == 'Expected'){
+                points[i].material.color.set(0x008000);
+              }else if (points[i].name.split(' | ')[2] == 'Measured'){
+                points[i].material.color.set(0x0000ff);
+              }
+              
+          }
+
+          // update color to red
+          hits[0].object.material.color.set(0xff0000);
+          // log
+          //console.log(hits[0].object);
+          
+          // alert("Name: "+ hits[0].object.name + " Position:" + JSON.stringify(hits[0].object.position))
+          // document.body.style.cursor = "pointer";
+
+          
+            // document.getElementById("point").innerHTML = "Name: "+ hits[0].object.name + " | Position:" + JSON.stringify(hits[0].object.position) + "<a onclick=Javascript:"+Go(hits[0].object.position)+"> Go </a>";
+
+            document.getElementById("point").innerHTML = "Name: "+ hits[0].object.name + " Position:" + JSON.stringify(hits[0].object.position);
+
+       
+          renderer.render(scene, camera);
+      }
+  }
+
+  console.log(scene.children)
+
+  document.body.style.cursor = "pointer";
+
+  // window.addEventListener('mousemove', onClick, false);
+  window.addEventListener('click', onClick, false);
+
+  function resizeRendererToDisplaySize(renderer) {
+    const canvas = renderer.domElement;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    const needResize = canvas.width !== width || canvas.height !== height;
+    if (needResize) {
+      renderer.setSize(width, height, false);
+    }
+    return needResize;
+  }
+
+
+
+  function render() {
+
+    if (resizeRendererToDisplaySize(renderer)) {
+      const canvas = renderer.domElement;
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
+
+     ///////////// find intersections
+
+    // raycaster.setFromCamera( pointer, camera );
+
+    // const intersects = raycaster.intersectObjects( scene.children, false );
+
+    //   if ( intersects.length > 0 ) {
+
+    //     if ( INTERSECTED != intersects[ 0 ].object ) {
+
+    //       if ( INTERSECTED ) {
+    //         INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+    //         console.log('test 1');
+    //       }
+
+    //       // INTERSECTED = intersects[ 0 ].object;
+    //       // NTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+    //       // INTERSECTED.material.emissive.setHex( 0xff0000 );
+    //       console.log('test 2', intersects[ 0 ].object);
+
+    //     }
+
+    //   } else {
+
+    //     if ( INTERSECTED ) {
+    //       INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+    //       console.log('test 3');
+    //     }
+
+    //     INTERSECTED = null;
+    //     console.log('test 4');
+
+    //   }
+
+    ///////////////////////////////
+    }
+
+    renderer.render(scene, camera);
+
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
+}
+
+
+getJSON('https://ujce9xyn45.execute-api.ap-southeast-1.amazonaws.com/default/trackbot_api?service=trackbot&operation=get_latest_location',
+function(err, data) {
+  if (err !== null) {
+    console.log('Something went wrong: ' + err);
+  } else {
+    console.log('Your data: ' + JSON.stringify(data));
+  }
+  var json_data= {"indicator": true, "message": {"tag1": {}, "tag2": {}, "tag3": {"description": "tag3 object", "price": 98, "measured_pos": [-0.39999999999999997, 2.4000000000000004, 2.1999999999999997], "expected_pos": [-0.15, 2.1, 1.35], "confidence": 3.67, "pos_error": 0.9354143466934851}, "tag4": {"description": "tag4 object", "price": 30, "measured_pos": [0.20000000000000007, 1.6, 0.8], "expected_pos": [-0.15, 1.95, 1.35], "confidence": 1.67, "pos_error": 0.7399324293474371}, "tag5": {"description": "tag5 object", "price": 75, "measured_pos": [1.2000000000000002, 1.6, 1.2], "expected_pos": [1.33, 1.54, 1.2], "confidence": 10.06, "pos_error": 0.14317821063276345}, "tag6": {}, "tag7": {}, "tag8": {"description": "tag8 object", "price": 21, "measured_pos": [1.6, 1.6, 1.5999999999999999], "expected_pos": [1.57, 1.54, 1.47], "confidence": 11.67, "pos_error": 0.14628738838327787}, "tag9": {"description": "tag9 object", "price": 83, "measured_pos": [1.4, 1.6, 2.1999999999999997], "expected_pos": [1.62, 1.54, 1.87], "confidence": 9.11, "pos_error": 0.4011234224026314}, "tag10": {}, "tag11": {}, "tag12": {"description": "tag12 object", "price": 3, "measured_pos": [2.6, 0.6, 1.4], "expected_pos": [2.1, 0.26, 1.22], "confidence": 5.67, "pos_error": 0.6308724118235002}, "tag13": {"description": "tag13 object", "price": 13, "measured_pos": [2.0, 0.20000000000000007, 2.1999999999999997], "expected_pos": [2.35, 0.26, 1.22], "confidence": 3.11, "pos_error": 1.0423531071570706}, "tag14": {"description": "tag14 object", "price": 32, "measured_pos": [0.20000000000000007, 0.4, 1.5999999999999999], "expected_pos": [2.55, 0.26, 1.22], "confidence": 2.0, "pos_error": 2.3846383373585183}, "tag15": {"description": "tag15 object", "price": 67, "measured_pos": [1.8000000000000003, -0.4, 2.1999999999999997], "expected_pos": [2.1, 2.5, 1.26], "confidence": 2.0, "pos_error": 3.063266230676008}, "tag16": {"description": "tag16 object", "price": 12, "measured_pos": [2.2, 2.4000000000000004, 1.2], "expected_pos": [2.25, 2.5, 1.26], "confidence": 4.0, "pos_error": 0.1268857754044949}, "tag17": {"description": "tag17 object", "price": 53, "measured_pos": [2.4, 2.6, 1.5999999999999999], "expected_pos": [2.4, 2.5, 1.26], "confidence": 3.67, "pos_error": 0.3544009029333869}, "tag18": {"description": "tag18 object", "price": 38, "measured_pos": [3.6, 0.20000000000000007, 1.5999999999999999], "expected_pos": [3.65, 0.2, 1.05], "confidence": 3.11, "pos_error": 0.5522680508593629}, "tag19": {"description": "tag19 object", "price": 53, "measured_pos": [3.6, 0.4, 2.1999999999999997], "expected_pos": [3.65, 0.39, 1.84], "confidence": 6.0, "pos_error": 0.3635931792539565}, "tag20": {"description": "tag20 object", "price": 51, "measured_pos": [3.6, 1.4, 1.4], "expected_pos": [3.65, 1.3, 1.38], "confidence": 7.11, "pos_error": 0.11357816691600528}}} 
+  var d =  data  || json_data
+  main(data);
+});
+
+
+// test
+//  var test_json_data= {"indicator": true, "message": {"tag1": {}, "tag2": {}, "tag3": {"description": "tag3 object", "price": 98, "measured_pos": [-0.39999999999999997, 2.4000000000000004, 2.1999999999999997], "expected_pos": [-0.15, 2.1, 1.35], "confidence": 3.67, "pos_error": 0.9354143466934851}, "tag4": {"description": "tag4 object", "price": 30, "measured_pos": [0.20000000000000007, 1.6, 0.8], "expected_pos": [-0.15, 1.95, 1.35], "confidence": 1.67, "pos_error": 0.7399324293474371}, "tag5": {"description": "tag5 object", "price": 75, "measured_pos": [1.2000000000000002, 1.6, 1.2], "expected_pos": [1.33, 1.54, 1.2], "confidence": 10.06, "pos_error": 0.14317821063276345}, "tag6": {}, "tag7": {}, "tag8": {"description": "tag8 object", "price": 21, "measured_pos": [1.6, 1.6, 1.5999999999999999], "expected_pos": [1.57, 1.54, 1.47], "confidence": 11.67, "pos_error": 0.14628738838327787}, "tag9": {"description": "tag9 object", "price": 83, "measured_pos": [1.4, 1.6, 2.1999999999999997], "expected_pos": [1.62, 1.54, 1.87], "confidence": 9.11, "pos_error": 0.4011234224026314}, "tag10": {}, "tag11": {}, "tag12": {"description": "tag12 object", "price": 3, "measured_pos": [2.6, 0.6, 1.4], "expected_pos": [2.1, 0.26, 1.22], "confidence": 5.67, "pos_error": 0.6308724118235002}, "tag13": {"description": "tag13 object", "price": 13, "measured_pos": [2.0, 0.20000000000000007, 2.1999999999999997], "expected_pos": [2.35, 0.26, 1.22], "confidence": 3.11, "pos_error": 1.0423531071570706}, "tag14": {"description": "tag14 object", "price": 32, "measured_pos": [0.20000000000000007, 0.4, 1.5999999999999999], "expected_pos": [2.55, 0.26, 1.22], "confidence": 2.0, "pos_error": 2.3846383373585183}, "tag15": {"description": "tag15 object", "price": 67, "measured_pos": [1.8000000000000003, -0.4, 2.1999999999999997], "expected_pos": [2.1, 2.5, 1.26], "confidence": 2.0, "pos_error": 3.063266230676008}, "tag16": {"description": "tag16 object", "price": 12, "measured_pos": [2.2, 2.4000000000000004, 1.2], "expected_pos": [2.25, 2.5, 1.26], "confidence": 4.0, "pos_error": 0.1268857754044949}, "tag17": {"description": "tag17 object", "price": 53, "measured_pos": [2.4, 2.6, 1.5999999999999999], "expected_pos": [2.4, 2.5, 1.26], "confidence": 3.67, "pos_error": 0.3544009029333869}, "tag18": {"description": "tag18 object", "price": 38, "measured_pos": [3.6, 0.20000000000000007, 1.5999999999999999], "expected_pos": [3.65, 0.2, 1.05], "confidence": 3.11, "pos_error": 0.5522680508593629}, "tag19": {"description": "tag19 object", "price": 53, "measured_pos": [3.6, 0.4, 2.1999999999999997], "expected_pos": [3.65, 0.39, 1.84], "confidence": 6.0, "pos_error": 0.3635931792539565}, "tag20": {"description": "tag20 object", "price": 51, "measured_pos": [3.6, 1.4, 1.4], "expected_pos": [3.65, 1.3, 1.38], "confidence": 7.11, "pos_error": 0.11357816691600528}}} 
+//  main(test_json_data);
+
+// init();
+// animate();
+
+
+</script>
+
+
+
+</body>
+</html>
