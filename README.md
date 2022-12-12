@@ -5,7 +5,7 @@ Introduction Websites for projects
 
 > https://mit-medialab.github.io/projects/trackbot/?start=1 - Start the trackbot
 
-> https://mit-medialab.github.io/projects/trackbot/Calibrate - Calibrate the Model
+> https://mit-medialab.github.io/projects/trackbot/calibrate - Calibrate the Model
 
 > https://mit-medialab.github.io/projects/trackbot/points - Visulize points
 
