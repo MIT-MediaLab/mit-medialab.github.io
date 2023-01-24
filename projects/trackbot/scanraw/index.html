@@ -71,9 +71,8 @@ const controls = new OrbitControls(camera, renderer.domElement)
 // ])
 // envTexture.mapping = THREE.CubeReflectionMapping
 
-const loader_ = new THREE.CubeTextureLoader();
-
-const envTexture = loader_.load("../models/textured_0_Up6yJWlK.jpg");
+const loader_ = new THREE.TextureLoader();
+const envTexture = loader_.load('../models/textured_0_Up6yJWLK.jpg');
 envTexture.mapping = THREE.CubeReflectionMapping
 
 // const material = new THREE.MeshPhysicalMaterial({
